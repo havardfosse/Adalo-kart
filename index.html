@@ -1,27 +1,62 @@
 <!DOCTYPE html>
 <html lang="no">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#12372a" />
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1, viewport-fit=cover"
+  >
+
+  <meta name="theme-color" content="#12372a">
+
   <title>Rutekart</title>
 
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css" />
+  <!-- Leaflet -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  >
+
+  <!-- Leaflet Draw -->
+  <link
+    rel="stylesheet"
+    href4/dist/leaflet.draw.css
 
   <style>
-    html, body, #map {
+    /* ==========================================================
+       GRUNNLEGGENDE OPPSETT
+       ========================================================== */
+
+    html,
+    body,
+    #map {
       width: 100%;
       height: 100%;
       margin: 0;
       padding: 0;
       overflow: hidden;
-      background: #dce9d8;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
-    /* Kartet fyller hele Adalo WebView. Ingen toppmeny eller bunnmeny. */
-    #map { position: fixed; inset: 0; }
+    body {
+      background: #dce9d8;
+      font-family:
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+    }
+
+    #map {
+      position: fixed;
+      inset: 0;
+    }
+
+
+    /* ==========================================================
+       PLASSERING I ADALO WEBVIEW
+       ========================================================== */
 
     .leaflet-control-container .leaflet-top {
       top: max(8px, env(safe-area-inset-top));
@@ -31,359 +66,1219 @@
       bottom: max(8px, env(safe-area-inset-bottom));
     }
 
+
+    /* ==========================================================
+       GENERELLE KARTKONTROLLER
+       ========================================================== */
+
     .leaflet-bar {
       border: 0 !important;
       border-radius: 12px !important;
-      overflow: hidden;
-      box-shadow: 0 6px 22px rgba(8, 38, 28, .22) !important;
+      overflow: visible !important;
+
+      box-shadow:
+        0 6px 22px
+        rgba(8, 38, 28, 0.22) !important;
     }
 
-    .leaflet-bar a {
-      width: 42px !important;
-      height: 42px !important;
-      line-height: 42px !important;
+    /*
+      Bare direkte ikonknapper skal være 44 x 44 px.
+      Tekstknappene i Leaflet Draw påvirkes ikke.
+    */
+
+    .leaflet-bar > a,
+    .leaflet-draw-toolbar > a {
+      width: 44px !important;
+      height: 44px !important;
+
+      line-height: 44px !important;
+
       border: 0 !important;
-      border-bottom: 1px solid #e6ece8 !important;
+
+      border-bottom:
+        1px solid #e6ece8 !important;
+
       color: #12372a !important;
-      background-color: rgba(255,255,255,.97) !important;
+
+      background-color:
+        rgba(255, 255, 255, 0.97) !important;
     }
 
-    .leaflet-bar a:last-child { border-bottom: 0 !important; }
-    .leaflet-draw-toolbar a { background-size: 300px 30px; }
-    .leaflet-control-attribution { font-size: 8px; }
+    .leaflet-bar > a:first-child,
+    .leaflet-draw-toolbar > a:first-child {
+      border-radius:
+        12px 12px 0 0 !important;
+    }
 
-    .status {
+    .leaflet-bar > a:last-child,
+    .leaflet-draw-toolbar > a:last-child {
+      border-bottom: 0 !important;
+
+      border-radius:
+        0 0 12px 12px !important;
+    }
+
+    .leaflet-bar > a:only-child,
+    .leaflet-draw-toolbar > a:only-child {
+      border-radius: 12px !important;
+    }
+
+
+    /* ==========================================================
+       LEAFLET DRAW IKONER
+       ========================================================== */
+
+    .leaflet-draw-toolbar {
+      border-radius: 12px !important;
+      overflow: visible !important;
+    }
+
+    .leaflet-draw-toolbar a {
+      background-size: 300px 30px;
+    }
+
+
+    /* ==========================================================
+       TEKSTKNAPPER I LEAFLET DRAW
+       Eksempel: Avbryt, Lagre og Fjern alle
+       ========================================================== */
+
+    .leaflet-draw-actions {
+      margin-left: 8px !important;
+    }
+
+    .leaflet-draw-actions ul {
+      display: flex !important;
+      flex-direction: column !important;
+
+      margin: 0 !important;
+      padding: 0 !important;
+
+      border-radius: 12px !important;
+      overflow: hidden !important;
+
+      box-shadow:
+        0 6px 22px
+        rgba(8, 38, 28, 0.22) !important;
+    }
+
+    .leaflet-draw-actions li {
+      display: block !important;
+
+      width: auto !important;
+      min-width: max-content !important;
+
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+
+    .leaflet-draw-actions a {
+      display: block !important;
+
+      width: auto !important;
+      min-width: max-content !important;
+
+      height: auto !important;
+      min-height: 40px !important;
+
+      padding: 11px 15px !important;
+
+      line-height: 18px !important;
+
+      color: white !important;
+      background: rgba(18, 55, 42, 0.97) !important;
+
+      border: 0 !important;
+      border-bottom:
+        1px solid rgba(255, 255, 255, 0.14) !important;
+
+      border-radius: 0 !important;
+
+      font-size: 13px !important;
+      font-weight: 700 !important;
+
+      text-align: left !important;
+      text-decoration: none !important;
+
+      white-space: nowrap !important;
+    }
+
+    .leaflet-draw-actions li:first-child a {
+      border-radius:
+        12px 12px 0 0 !important;
+    }
+
+    .leaflet-draw-actions li:last-child a {
+      border-bottom: 0 !important;
+
+      border-radius:
+        0 0 12px 12px !important;
+    }
+
+    .leaflet-draw-actions li:only-child a {
+      border-radius: 12px !important;
+    }
+
+    .leaflet-draw-actions a:hover {
+      background:
+        rgba(35, 116, 81, 0.98) !important;
+    }
+
+
+    /* ==========================================================
+       MOBILTILPASNING FOR TEKSTKNAPPER
+       ========================================================== */
+
+    @media (max-width: 500px) {
+      .leaflet-draw-actions a {
+        max-width: calc(100vw - 100px);
+
+        overflow: hidden;
+        text-overflow: ellipsis;
+
+        font-size: 12px !important;
+      }
+    }
+
+
+    /* ==========================================================
+       STATUSMELDING
+       ========================================================== */
+
+    #status {
       position: fixed;
-      z-index: 1000;
+
+      z-index: 1500;
+
+      top: max(
+        12px,
+        env(safe-area-inset-top)
+      );
+
       left: 50%;
-      top: max(12px, env(safe-area-inset-top));
-      transform: translateX(-50%);
-      max-width: calc(100vw - 150px);
-      padding: 9px 13px;
-      border-radius: 999px;
+
+      transform:
+        translateX(-50%)
+        translateY(-12px);
+
+      max-width:
+        calc(100vw - 170px);
+
+      padding: 9px 14px;
+
       color: white;
-      background: rgba(18,55,42,.92);
-      box-shadow: 0 6px 20px rgba(8,38,28,.22);
+
+      background:
+        rgba(18, 55, 42, 0.95);
+
+      border-radius: 999px;
+
+      box-shadow:
+        0 6px 22px
+        rgba(8, 38, 28, 0.22);
+
       font-size: 12px;
       font-weight: 750;
+
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+
       pointer-events: none;
+
       opacity: 0;
-      transition: opacity .2s ease;
+
+      transition:
+        opacity 0.2s ease,
+        transform 0.2s ease;
     }
 
-    .status.show { opacity: 1; }
+    #status.show {
+      opacity: 1;
+
+      transform:
+        translateX(-50%)
+        translateY(0);
+    }
+
+
+    /* ==========================================================
+       EGEN LAGREKNAPP
+       ========================================================== */
 
     .save-control {
-      background: #12372a !important;
+      display: grid !important;
+      place-items: center !important;
+
       color: white !important;
-      font-size: 20px;
+
+      background:
+        #12372a !important;
+
+      font-size: 21px !important;
+      font-weight: 900 !important;
+
       text-align: center;
       text-decoration: none;
     }
+
+    .save-control:hover {
+      color: white !important;
+
+      background:
+        #237451 !important;
+    }
+
+
+    /* ==========================================================
+       GPS-KNAPP
+       ========================================================== */
 
     .locate-control {
-      font-size: 22px;
+      display: grid !important;
+      place-items: center !important;
+
+      color: #12372a !important;
+
+      font-size: 23px !important;
+
       text-align: center;
       text-decoration: none;
     }
 
-    .route-popup strong { color: #12372a; }
-    .route-popup small { display: block; margin-top: 4px; color: #68766f; }
+
+    /* ==========================================================
+       POPUP
+       ========================================================== */
+
+    .leaflet-popup-content-wrapper {
+      border-radius: 16px;
+    }
+
+    .leaflet-popup-content {
+      margin: 14px 16px;
+
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .route-popup strong {
+      display: block;
+
+      margin-bottom: 4px;
+
+      color: #12372a;
+
+      font-size: 14px;
+    }
+
+    .route-popup small {
+      display: block;
+
+      color: #68766f;
+
+      font-size: 11px;
+      line-height: 1.4;
+    }
+
+
+    /* ==========================================================
+       ATTRIBUSJON
+       ========================================================== */
+
+    .leaflet-control-attribution {
+      font-size: 8px;
+    }
   </style>
 </head>
-<body>
-  <div id="map" aria-label="Kart for tegning og redigering av ruter"></div>
-  <div id="status" class="status" role="status"></div>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+<body>
+
+  <div
+    id="map"
+    aria-label="Kart for visning og redigering av ruter"
+  ></div>
+
+  <div
+    id="status"
+    role="status"
+    aria-live="polite"
+  ></div>
+
+
+  <!-- Leaflet -->
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/script>
+
+  <!-- Leaflet Draw -->
+  <script
+    src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"
+  ></script>
+
 
   <script>
     "use strict";
 
-    // URL-eksempel fra Adalo:
-    // https://bruker.github.io/adalo-kart/?userId=123&routeId=45&mode=edit
-    //
-    // Valgfritt webhook-endepunkt:
-    // &eventEndpoint=https%3A%2F%2Fdin-server.no%2Fmap-events
 
-    const params = new URLSearchParams(window.location.search);
+    /* ==========================================================
+       1. URL-PARAMETERE FRA ADALO
+       ========================================================== */
+
+    const urlParameters =
+      new URLSearchParams(
+        window.location.search
+      );
+
 
     const CONFIG = {
-      userId: params.get("userId") || "demo-user",
-      routeId: params.get("routeId") || "demo-route",
-      eventEndpoint: params.get("eventEndpoint") || "",
-      mode: params.get("mode") || "edit",
-      center: [63.4305, 10.3951],
+      /*
+        Bruk:
+
+        ?mode=edit
+        for redigering
+
+        ?mode=view
+        for bare visning
+      */
+
+      mode:
+        urlParameters.get("mode") === "edit"
+          ? "edit"
+          : "view",
+
+      userId:
+        urlParameters.get("userId")
+        || "demo-user",
+
+      routeId:
+        urlParameters.get("routeId")
+        || "demo-route",
+
+      /*
+        Kan brukes senere:
+
+        ?eventEndpoint=https://...
+      */
+
+      eventEndpoint:
+        urlParameters.get("eventEndpoint")
+        || "",
+
+      /*
+        Startposisjon for kartet.
+        Denne står foreløpig i Trondheim.
+      */
+
+      center: [
+        63.4305,
+        10.3951
+      ],
+
       zoom: 14
     };
 
-    const map = L.map("map", {
-      zoomControl: true,
-      attributionControl: true
-    }).setView(CONFIG.center, CONFIG.zoom);
 
-    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19,
-      attribution: "&copy; OpenStreetMap-bidragsytere"
-    }).addTo(map);
+    const isEditMode =
+      CONFIG.mode === "edit";
 
-    const editableLayers = new L.FeatureGroup();
-    map.addLayer(editableLayers);
 
-    const storageKey = `adalo-map-${CONFIG.userId}-${CONFIG.routeId}`;
+    /*
+      Hver bruker og rute får sin egen
+      lokale lagringsnøkkel.
+    */
+
+    const storageKey =
+      "adalo-map-"
+      + CONFIG.userId
+      + "-"
+      + CONFIG.routeId;
+
+
+    /* ==========================================================
+       2. OPPRETT KART
+       ========================================================== */
+
+    const map = L.map(
+      "map",
+      {
+        zoomControl: true,
+        attributionControl: true
+      }
+    ).setView(
+      CONFIG.center,
+      CONFIG.zoom
+    );
+
+
+    L.tileLayer(
+      "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+      {
+        maxZoom: 19,
+
+        attribution:
+          "&copy; OpenStreetMap-bidragsytere"
+      }
+    ).addTo(map);
+
+
+    /*
+      Alle ruter, soner og punkter legges
+      inn i denne gruppen.
+    */
+
+    const editableLayers =
+      new L.FeatureGroup();
+
+
+    map.addLayer(
+      editableLayers
+    );
+
+
+    /* ==========================================================
+       3. STATUSMELDINGER
+       ========================================================== */
+
     let statusTimer;
 
-    function showStatus(message, duration = 2200) {
-      const node = document.getElementById("status");
-      node.textContent = message;
-      node.classList.add("show");
-      clearTimeout(statusTimer);
-      statusTimer = setTimeout(() => node.classList.remove("show"), duration);
+
+    function showStatus(
+      message,
+      duration = 2400
+    ) {
+      const statusElement =
+        document.getElementById(
+          "status"
+        );
+
+
+      statusElement.textContent =
+        message;
+
+
+      statusElement.classList.add(
+        "show"
+      );
+
+
+      window.clearTimeout(
+        statusTimer
+      );
+
+
+      statusTimer =
+        window.setTimeout(
+          function () {
+            statusElement
+              .classList
+              .remove("show");
+          },
+          duration
+        );
     }
 
-    function styleFeature(feature) {
-      const type = feature?.geometry?.type;
-      if (type === "Polygon" || type === "MultiPolygon") {
-        return { color: "#2563eb", weight: 3, fillColor: "#3b82f6", fillOpacity: .22 };
+
+    /* ==========================================================
+       4. STILER FOR RUTER OG SONER
+       ========================================================== */
+
+    function getFeatureStyle(
+      feature
+    ) {
+      const geometryType =
+        feature
+          && feature.geometry
+          && feature.geometry.type;
+
+
+      if (
+        geometryType === "Polygon"
+        || geometryType
+          === "MultiPolygon"
+      ) {
+        return {
+          color: "#2563eb",
+          weight: 3,
+
+          fillColor: "#3b82f6",
+          fillOpacity: 0.22
+        };
       }
-      return { color: "#dc2626", weight: 5, opacity: .92 };
+
+
+      return {
+        color: "#dc2626",
+        weight: 5,
+        opacity: 0.92
+      };
     }
 
-    function bindLayerPopup(layer) {
-      const type = layer instanceof L.Polygon && !(layer instanceof L.Rectangle)
-        ? "Sone"
-        : layer instanceof L.Polyline
-          ? "Rute"
-          : layer instanceof L.Marker
-            ? "Punkt"
-            : "Kartobjekt";
 
-      layer.bindPopup(`<div class="route-popup"><strong>${type}</strong><small>Bruk redigeringsverktøyet for å flytte eller endre objektet.</small></div>`);
+    /* ==========================================================
+       5. POPUP PÅ KARTOBJEKTER
+       ========================================================== */
+
+    function getLayerType(
+      layer
+    ) {
+      if (
+        layer instanceof L.Polygon
+      ) {
+        return "Sone";
+      }
+
+
+      if (
+        layer instanceof L.Polyline
+      ) {
+        return "Rute";
+      }
+
+
+      if (
+        layer instanceof L.Marker
+      ) {
+        return "Punkt";
+      }
+
+
+      return "Kartobjekt";
     }
+
+
+    function bindLayerPopup(
+      layer
+    ) {
+      const objectType =
+        getLayerType(layer);
+
+
+      let instruction;
+
+
+      if (isEditMode) {
+        instruction =
+          "Bruk redigeringsverktøyet "
+          + "for å endre eller flytte "
+          + "objektet.";
+      } else {
+        instruction =
+          "Dette kartet er åpnet "
+          + "i visningsmodus.";
+      }
+
+
+      layer.bindPopup(
+        `
+          <div class="route-popup">
+            <strong>${objectType}</strong>
+
+            <small>
+              ${instruction}
+            </small>
+          </div>
+        `
+      );
+    }
+
+
+    /* ==========================================================
+       6. GEOJSON
+       ========================================================== */
 
     function exportGeoJson() {
-      const data = editableLayers.toGeoJSON();
-      data.properties = {
-        routeId: CONFIG.routeId,
-        userId: CONFIG.userId,
-        updatedAt: new Date().toISOString()
-      };
-      return data;
-    }
+      const geoJson =
+        editableLayers.toGeoJSON();
 
-    function persistLocal() {
-      localStorage.setItem(storageKey, JSON.stringify(exportGeoJson()));
-    }
 
-    async function publishEvent(type, extra = {}) {
-      const event = {
-        source: "ADALO_LEAFLET_EDITOR",
-        type,
-        userId: CONFIG.userId,
-        routeId: CONFIG.routeId,
-        timestamp: new Date().toISOString(),
-        geojson: exportGeoJson(),
-        ...extra
+      geoJson.properties = {
+        routeId:
+          CONFIG.routeId,
+
+        userId:
+          CONFIG.userId,
+
+        mode:
+          CONFIG.mode,
+
+        updatedAt:
+          new Date().toISOString()
       };
 
-      // Kan fanges opp hvis kartet ligger i en ordinær iframe/webside.
-      window.parent.postMessage(event, "*");
-      window.dispatchEvent(new CustomEvent("adalo-map-event", { detail: event }));
 
-      // Faktisk sending til Adalo bør gå via en sikker webhook/server.
-      // Ikke legg Adalo API-nøkkelen direkte i offentlig JavaScript.
-      if (CONFIG.eventEndpoint) {
-        const response = await fetch(CONFIG.eventEndpoint, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(event),
-          mode: "cors"
-        });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return geoJson;
+    }
+
+
+    function saveLocally() {
+      const data =
+        exportGeoJson();
+
+
+      localStorage.setItem(
+        storageKey,
+        JSON.stringify(data)
+      );
+    }
+
+
+    /* ==========================================================
+       7. HENDELSER TIL ADALO ELLER WEBHOOK
+       ========================================================== */
+
+    async function publishEvent(
+      eventType,
+      additionalData = {}
+    ) {
+      const eventData = {
+        source:
+          "ADALO_LEAFLET_EDITOR",
+
+        type:
+          eventType,
+
+        userId:
+          CONFIG.userId,
+
+        routeId:
+          CONFIG.routeId,
+
+        timestamp:
+          new Date().toISOString(),
+
+        geojson:
+          exportGeoJson(),
+
+        ...additionalData
+      };
+
+
+      /*
+        Kan brukes av en overordnet nettside
+        eller en kompatibel iframe.
+      */
+
+      window.parent.postMessage(
+        eventData,
+        "*"
+      );
+
+
+      window.dispatchEvent(
+        new CustomEvent(
+          "adalo-map-event",
+          {
+            detail:
+              eventData
+          }
+        )
+      );
+
+
+      /*
+        Faktisk sending til backend.
+
+        Ikke legg en hemmelig Adalo API-nøkkel
+        direkte i denne filen.
+      */
+
+      if (
+        CONFIG.eventEndpoint
+      ) {
+        const response =
+          await fetch(
+            CONFIG.eventEndpoint,
+            {
+              method: "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json"
+              },
+
+              body:
+                JSON.stringify(
+                  eventData
+                ),
+
+              mode: "cors"
+            }
+          );
+
+
+        if (
+          !response.ok
+        ) {
+          throw new Error(
+            "HTTP "
+            + response.status
+          );
+        }
       }
 
-      return event;
+
+      return eventData;
     }
 
-    function loadGeoJson(data) {
-      if (!data || !data.features) return false;
 
-      L.geoJSON(data, {
-        style: styleFeature,
-        pointToLayer: (_, latlng) => L.marker(latlng),
-        onEachFeature: (_, layer) => {
-          editableLayers.addLayer(layer);
-          bindLayerPopup(layer);
+    /* ==========================================================
+       8. LAST GEOJSON INN I KARTET
+       ========================================================== */
+
+    function loadGeoJson(
+      geoJsonData
+    ) {
+      if (
+        !geoJsonData
+        || !Array.isArray(
+          geoJsonData.features
+        )
+      ) {
+        return false;
+      }
+
+
+      L.geoJSON(
+        geoJsonData,
+        {
+          style:
+            getFeatureStyle,
+
+          pointToLayer:
+            function (
+              feature,
+              latlng
+            ) {
+              return L.marker(
+                latlng
+              );
+            },
+
+          onEachFeature:
+            function (
+              feature,
+              layer
+            ) {
+              editableLayers
+                .addLayer(layer);
+
+
+              bindLayerPopup(
+                layer
+              );
+            }
         }
-      });
+      );
 
-      if (editableLayers.getLayers().length) {
-        map.fitBounds(editableLayers.getBounds(), { padding: [35, 35] });
+
+      if (
+        editableLayers
+          .getLayers()
+          .length > 0
+      ) {
+        map.fitBounds(
+          editableLayers.getBounds(),
+          {
+            padding: [
+              35,
+              35
+            ]
+          }
+        );
+
+
         return true;
       }
+
+
       return false;
     }
 
+
+    /* ==========================================================
+       9. LAST RUTE FRA URL, LOKAL LAGRING ELLER DEMO
+       ========================================================== */
+
     function loadInitialData() {
-      // 1. GeoJSON kan sendes inn fra Adalo som URL-kodet tekst.
-      const incoming = params.get("geojson");
-      if (incoming) {
+      /*
+        Prioritet 1:
+        GeoJSON sendt inn via URL fra Adalo.
+      */
+
+      const incomingGeoJson =
+        urlParameters.get(
+          "geojson"
+        );
+
+
+      if (
+        incomingGeoJson
+      ) {
         try {
-          if (loadGeoJson(JSON.parse(incoming))) {
-            showStatus("Rute lastet fra Adalo");
+          const parsedGeoJson =
+            JSON.parse(
+              incomingGeoJson
+            );
+
+
+          if (
+            loadGeoJson(
+              parsedGeoJson
+            )
+          ) {
+            showStatus(
+              "Rute lastet fra Adalo"
+            );
+
+
             return;
           }
-        } catch (error) {
-          console.warn("Ugyldig GeoJSON i URL", error);
+        } catch (
+          error
+        ) {
+          console.warn(
+            "Ugyldig GeoJSON i URL:",
+            error
+          );
         }
       }
 
-      // 2. Ellers lastes sist lagrede versjon på denne enheten.
+
+      /*
+        Prioritet 2:
+        Sist lagrede rute på denne enheten.
+      */
+
       try {
-        const local = JSON.parse(localStorage.getItem(storageKey) || "null");
-        if (loadGeoJson(local)) {
-          showStatus("Lokalt lagret rute lastet");
+        const localData =
+          JSON.parse(
+            localStorage.getItem(
+              storageKey
+            )
+            || "null"
+          );
+
+
+        if (
+          loadGeoJson(
+            localData
+          )
+        ) {
+          showStatus(
+            "Lagret rute lastet"
+          );
+
+
           return;
         }
-      } catch (error) {
-        console.warn("Kunne ikke lese lokal rute", error);
+      } catch (
+        error
+      ) {
+        console.warn(
+          "Kunne ikke lese lokal rute:",
+          error
+        );
       }
 
-      // 3. En kort eksempelrute første gang kartet åpnes.
-      const demo = L.polyline([
-        [63.4305, 10.3951],
-        [63.4313, 10.3990],
-        [63.4330, 10.4028],
-        [63.4348, 10.4064]
-      ], { color: "#dc2626", weight: 5, opacity: .92 });
-      editableLayers.addLayer(demo);
-      bindLayerPopup(demo);
-      map.fitBounds(demo.getBounds(), { padding: [35, 35] });
-    }
 
-    if (CONFIG.mode === "edit") {
-      const drawControl = new L.Control.Draw({
-        position: "topleft",
-        draw: {
-          polyline: {
-            shapeOptions: { color: "#dc2626", weight: 5, opacity: .92 },
-            showLength: true,
-            metric: true
-          },
-          polygon: {
-            allowIntersection: false,
-            showArea: true,
-            metric: true,
-            shapeOptions: { color: "#2563eb", weight: 3, fillColor: "#3b82f6", fillOpacity: .22 }
-          },
-          marker: true,
-          rectangle: false,
-          circle: false,
-          circlemarker: false
-        },
-        edit: {
-          featureGroup: editableLayers,
-          edit: true,
-          remove: true
-        }
-      });
-      map.addControl(drawControl);
-    }
+      /*
+        Prioritet 3:
+        Eksempelrute dersom ingen rute finnes.
+      */
 
-    map.on(L.Draw.Event.CREATED, event => {
-      editableLayers.addLayer(event.layer);
-      bindLayerPopup(event.layer);
-      persistLocal();
-      publishEvent("map_object_created", { layerType: event.layerType }).catch(console.warn);
-      showStatus("Objekt opprettet");
-    });
+      const demoRoute =
+        L.polyline(
+          [
+            [
+              63.4305,
+              10.3951
+            ],
 
-    map.on(L.Draw.Event.EDITED, event => {
-      persistLocal();
-      publishEvent("map_objects_edited", { changedCount: event.layers.getLayers().length }).catch(console.warn);
-      showStatus("Endringer lagret lokalt");
-    });
+            [
+              63.4313,
+              10.3990
+            ],
 
-    map.on(L.Draw.Event.DELETED, event => {
-      persistLocal();
-      publishEvent("map_objects_deleted", { deletedCount: event.layers.getLayers().length }).catch(console.warn);
-      showStatus("Objekt slettet");
-    });
+            [
+              63.4330,
+              10.4028
+            ],
 
-    // Minimal lagreknapp som kartkontroll, ikke en egen appmeny.
-    const SaveControl = L.Control.extend({
-      options: { position: "topright" },
-      onAdd() {
-        const container = L.DomUtil.create("div", "leaflet-bar");
-        const button = L.DomUtil.create("a", "save-control", container);
-        button.href = "#";
-        button.title = "Lagre rute";
-        button.setAttribute("aria-label", "Lagre rute");
-        button.innerHTML = "✓";
-        L.DomEvent.disableClickPropagation(container);
-        L.DomEvent.on(button, "click", async event => {
-          L.DomEvent.preventDefault(event);
-          persistLocal();
-          try {
-            await publishEvent("route_saved");
-            showStatus(CONFIG.eventEndpoint ? "Rute sendt og lagret" : "Rute lagret på enheten");
-          } catch (error) {
-            console.error(error);
-            showStatus("Lokalt lagret, men sending mislyktes", 3500);
+            [
+              63.4348,
+              10.4064
+            ]
+          ],
+          {
+            color:
+              "#dc2626",
+
+            weight:
+              5,
+
+            opacity:
+              0.92
           }
-        });
-        return container;
-      }
-    });
-    map.addControl(new SaveControl());
+        );
 
-    const LocateControl = L.Control.extend({
-      options: { position: "bottomright" },
-      onAdd() {
-        const container = L.DomUtil.create("div", "leaflet-bar");
-        const button = L.DomUtil.create("a", "locate-control", container);
-        button.href = "#";
-        button.title = "Finn min posisjon";
-        button.setAttribute("aria-label", "Finn min posisjon");
-        button.innerHTML = "◎";
-        L.DomEvent.disableClickPropagation(container);
-        L.DomEvent.on(button, "click", event => {
-          L.DomEvent.preventDefault(event);
-          if (!navigator.geolocation) return showStatus("GPS støttes ikke");
-          navigator.geolocation.getCurrentPosition(
-            position => {
-              const latlng = [position.coords.latitude, position.coords.longitude];
-              map.setView(latlng, 17);
-              L.circleMarker(latlng, {
-                radius: 8, color: "white", weight: 4,
-                fillColor: "#3283f5", fillOpacity: 1
-              }).addTo(map).bindPopup("Din posisjon").openPopup();
+
+      editableLayers.addLayer(
+        demoRoute
+      );
+
+
+      bindLayerPopup(
+        demoRoute
+      );
+
+
+      map.fitBounds(
+        demoRoute.getBounds(),
+        {
+          padding: [
+            35,
+            35
+          ]
+        }
+      );
+    }
+
+
+    /* ==========================================================
+       10. REDIGERINGSVERKTØY
+       Vises bare med mode=edit
+       ========================================================== */
+
+    if (
+      isEditMode
+    ) {
+      const drawControl =
+        new L.Control.Draw(
+          {
+            position:
+              "topleft",
+
+            draw: {
+              /*
+                Tegn rute.
+              */
+
+              polyline: {
+                shapeOptions: {
+                  color:
+                    "#dc2626",
+
+                  weight:
+                    5,
+
+                  opacity:
+                    0.92
+                },
+
+                showLength:
+                  true,
+
+                metric:
+                  true
+              },
+
+
+              /*
+                Tegn sone.
+              */
+
+              polygon: {
+                allowIntersection:
+                  false,
+
+                showArea:
+                  true,
+
+                metric:
+                  true,
+
+                shapeOptions: {
+                  color:
+                    "#2563eb",
+
+                  weight:
+                    3,
+
+                  fillColor:
+                    "#3b82f6",
+
+                  fillOpacity:
+                    0.22
+                }
+              },
+
+
+              /*
+                Plasser punkt.
+              */
+
+              marker:
+                true,
+
+
+              /*
+                Verktøy vi ikke trenger.
+              */
+
+              rectangle:
+                false,
+
+              circle:
+                false,
+
+              circlemarker:
+                false
             },
-            () => showStatus("Fikk ikke tilgang til posisjon"),
-            { enableHighAccuracy: true, timeout: 10000 }
-          );
-        });
-        return container;
-      }
-    });
-    map.addControl(new LocateControl());
 
-    loadInitialData();
-    setTimeout(() => map.invalidateSize(), 250);
 
-    // Tilgjengelig i nettleserkonsollen ved testing.
-    window.AdaloMapEditor = {
-      getGeoJson: exportGeoJson,
-      save: () => publishEvent("route_saved"),
-      clear: () => {
-        editableLayers.clearLayers();
-        persistLocal();
+            edit: {
+              featureGroup:
+                editableLayers,
+
+              edit:
+                true,
+
+              remove:
+                true
+            }
+          }
+        );
+
+
+      map.addControl(
+        drawControl
+      );
+    }
+
+
+    /* ==========================================================
+       11. NÅR ET NYTT OBJEKT TEGNES
+       ========================================================== */
+
+    map.on(
+      L.Draw.Event.CREATED,
+      function (
+        event
+      ) {
+        if (
+          !isEditMode
+        ) {
+          return;
+        }
+
+
+        editableLayers.addLayer(
+          event.layer
+        );
+
+
+        bindLayerPopup(
+          event.layer
+        );
+
+
+        saveLocally();
+
+
+        publishEvent(
+          "map_object_created",
+          {
+            layerType:
+              event.layerType
+          }
+        ).catch(
+          console.warn
+        );
+
+
+        showStatus(
+          "Kartobjekt opprettet"
+        );
       }
-    };
-  </script>
-</body>
-</html>
+    );
+
+
+    /* ==========================================================
+       12. NÅR ET OBJEKT REDIGERES
+       ========================================================== */
+
+    map.on(
+      L.Draw.Event.EDITED,
+      function (
+        event
+      ) {
+        if (
+          !isEditMode
+        ) {
+          return;
+        }
+
+
+        saveLocally();
+
+
+        publishEvent(
+          "map_objects_edited",
+          {
+            changedCount:
+              event.layers
+                .getLayers()
+                .length
+          }
+        ).catch(
+          console.warn
+        );
+
+
+        showStatus(
+          "Endringer lagret lokalt"
+        );
+      }
+    );
+
+
+    /* ==========================================================
+       13. NÅR ET OBJEKT SLETTES
+       ========================================================== */
+
+    map.on(
+      L.Draw.Event.DELETED,
+      function (
+        event
+      ) {
+        if (
+          !isEditMode
+        ) {
+          return;
+        }
+
+
+        saveLocally();
+
+
+        publishEvent(
+          "map_objects_deleted",
+          {
+            deletedCount:
+              event.layers
+                .getLayers()
+                .length
+          }
+        ).catch(
+          console.warn
+        );
+
+
+        showStatus(
+          "Kartobjekt slettet"
+        );
+      }
+    );
+
+
+    /* ==
