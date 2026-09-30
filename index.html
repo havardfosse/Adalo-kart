@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="no">
+
 <head>
   <meta charset="UTF-8">
 
@@ -11,7 +12,10 @@
   <title>Mitt kart</title>
 
   <!-- Leaflet CSS -->
-  https://unpkg.com/leaflet@1.9.4/dist/leaflet.css
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
 
   <style>
     html, body {
@@ -32,31 +36,27 @@
   <div id="map"></div>
 
   <!-- Leaflet JavaScript -->
-  https://unpkg.com/leaflet@1.9.4/dist/leaflet.js  </script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <script>
 
-    // Oppretter kartet
+    // Opprett kartet
     const map = L.map("map").setView(
       [63.4305, 10.3951],
       13
     );
 
-    // Legger til OpenStreetMap
+    // OpenStreetMap
     L.tileLayer(
       "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
       {
         maxZoom: 19,
-        attribution:
-          '&copy; OpenStreetMap contributors'
+        attribution: '&copy; OpenStreetMap contributors'
       }
     ).addTo(map);
 
 
-    // -----------------------------
-    // EKSEMPEL: MARKØR
-    // -----------------------------
-
+    // MARKØR
     const marker = L.marker([
       63.4305,
       10.3951
@@ -67,10 +67,7 @@
     );
 
 
-    // -----------------------------
-    // EKSEMPEL: SONE
-    // -----------------------------
-
+    // SONE
     const sone1 = L.polygon([
       [63.4320, 10.3880],
       [63.4340, 10.3940],
@@ -88,10 +85,7 @@
     );
 
 
-    // -----------------------------
-    // EKSEMPEL: RUTE
-    // -----------------------------
-
+    // RUTE
     const rute1 = L.polyline([
       [63.4275, 10.3870],
       [63.4290, 10.3900],
