@@ -1,107 +1,844 @@
 <!DOCTYPE html>
 <html lang="no">
-
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#12372a" />
+  <title>UT! - Natur-eventyr</title>
 
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  >
-
-  <title>Mitt kart</title>
-
-  <!-- Leaflet CSS -->
+  <link rel="preconnect" href="https://unpkg.com" />
+  <link rel="preconnect" href="https://tile.openstreetmap.org" />
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIINfQ3ynhYhWbEmZMrKkZcd3sZ1B4T5dJI="
+    crossorigin=""
   />
 
   <style>
-    html, body {
-      height: 100%;
-      margin: 0;
-      padding: 0;
+    :root {
+      --forest-950: #0b241b;
+      --forest-900: #12372a;
+      --forest-800: #18533c;
+      --forest-700: #237451;
+      --lime: #b9f227;
+      --lime-dark: #86b915;
+      --cream: #f7f7ef;
+      --paper: #ffffff;
+      --ink: #14211b;
+      --muted: #64736b;
+      --blue: #2f80ed;
+      --red: #ef4444;
+      --gold: #f5b700;
+      --shadow: 0 12px 32px rgba(6, 30, 22, 0.2);
+      --radius: 20px;
     }
 
-    #map {
-      width: 100%;
-      height: 100vh;
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; overflow: hidden; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--forest-950); color: var(--ink); }
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+    button:focus-visible, input:focus-visible { outline: 3px solid #58a6ff; outline-offset: 2px; }
+
+    #app { height: 100%; display: grid; grid-template-rows: auto 1fr auto; background: var(--cream); }
+
+    .topbar {
+      z-index: 1100;
+      padding: max(10px, env(safe-area-inset-top)) 14px 10px;
+      background: linear-gradient(135deg, var(--forest-950), var(--forest-800));
+      color: white;
+      box-shadow: 0 4px 16px rgba(0,0,0,.18);
+    }
+    .top-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .brand { display: flex; align-items: center; gap: 9px; min-width: 0; }
+    .brand-logo { width: 38px; height: 38px; border-radius: 13px; display: grid; place-items: center; background: var(--lime); color: var(--forest-950); font-size: 21px; box-shadow: inset 0 -3px 0 rgba(0,0,0,.11); }
+    .brand strong { display: block; font-size: 17px; letter-spacing: .2px; }
+    .brand small { display: block; opacity: .7; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
+    .level-pill { flex: 0 0 auto; display: flex; align-items: center; gap: 7px; background: rgba(255,255,255,.11); border: 1px solid rgba(255,255,255,.14); padding: 7px 10px; border-radius: 999px; font-weight: 800; font-size: 12px; }
+    .level-pill span { color: var(--lime); }
+    .xp-wrap { margin-top: 9px; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 9px; font-size: 11px; font-weight: 750; }
+    .xp-bar { height: 9px; overflow: hidden; border-radius: 999px; background: rgba(255,255,255,.15); }
+    .xp-fill { height: 100%; width: 0%; border-radius: inherit; background: linear-gradient(90deg, var(--lime-dark), var(--lime)); transition: width .5s ease; }
+
+    main { position: relative; min-height: 0; overflow: hidden; }
+    #map { position: absolute; inset: 0; z-index: 1; background: #dce9d8; }
+
+    .hud { position: absolute; z-index: 550; left: 12px; right: 12px; top: 12px; pointer-events: none; display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+    .mission-card { pointer-events: auto; background: rgba(255,255,255,.95); backdrop-filter: blur(10px); border-radius: 17px; padding: 11px 12px; box-shadow: var(--shadow); max-width: min(310px, calc(100vw - 86px)); border: 1px solid rgba(18,55,42,.08); }
+    .mission-card .eyebrow { color: var(--forest-700); font-size: 10px; font-weight: 900; letter-spacing: 1.1px; text-transform: uppercase; }
+    .mission-card h2 { margin: 3px 0 3px; font-size: 15px; line-height: 1.2; }
+    .mission-card p { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.35; }
+    .mission-progress { margin-top: 8px; display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 800; }
+    .mini-bar { height: 7px; flex: 1; border-radius: 999px; background: #e6ece8; overflow: hidden; }
+    .mini-bar > div { height: 100%; width: 0; background: var(--forest-700); transition: width .4s ease; }
+
+    .map-actions { pointer-events: auto; display: grid; gap: 9px; }
+    .round-button { width: 44px; height: 44px; border: 0; border-radius: 15px; display: grid; place-items: center; font-size: 20px; background: rgba(255,255,255,.96); box-shadow: var(--shadow); color: var(--forest-900); }
+    .round-button.primary { background: var(--forest-900); color: white; }
+
+    .stats-strip { position: absolute; z-index: 550; bottom: 13px; left: 12px; right: 12px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; pointer-events: none; }
+    .stat { background: rgba(255,255,255,.95); backdrop-filter: blur(9px); border-radius: 14px; padding: 8px 7px; text-align: center; box-shadow: 0 8px 22px rgba(10,45,33,.14); }
+    .stat strong { display: block; font-size: 14px; color: var(--forest-900); }
+    .stat span { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; font-weight: 800; }
+
+    .bottom-nav { z-index: 1100; min-height: 68px; padding: 7px 8px max(7px, env(safe-area-inset-bottom)); background: white; display: grid; grid-template-columns: repeat(4, 1fr); box-shadow: 0 -5px 20px rgba(10,45,33,.10); }
+    .nav-btn { border: 0; border-radius: 14px; background: transparent; color: #718079; display: grid; place-items: center; align-content: center; gap: 2px; font-size: 10px; font-weight: 800; min-height: 54px; }
+    .nav-btn .icon { font-size: 22px; }
+    .nav-btn.active { background: #edf3ee; color: var(--forest-800); }
+    .nav-btn.scan { color: var(--forest-950); background: var(--lime); margin: 0 5px; box-shadow: inset 0 -3px 0 rgba(0,0,0,.10); }
+
+    .panel, .modal { position: absolute; z-index: 1500; inset: 0; background: var(--cream); transform: translateY(100%); transition: transform .28s ease; overflow-y: auto; padding-bottom: calc(78px + env(safe-area-inset-bottom)); }
+    .panel.open, .modal.open { transform: translateY(0); }
+    .panel-head { position: sticky; top: 0; z-index: 3; display: flex; align-items: center; justify-content: space-between; padding: 17px 16px 13px; background: rgba(247,247,239,.94); backdrop-filter: blur(10px); border-bottom: 1px solid #dfe6e1; }
+    .panel-head h2 { margin: 0; font-size: 20px; }
+    .close-btn { border: 0; width: 38px; height: 38px; border-radius: 12px; background: white; box-shadow: 0 4px 12px rgba(0,0,0,.08); font-size: 20px; }
+    .content { padding: 14px; }
+
+    .hero { color: white; border-radius: var(--radius); padding: 20px; background: radial-gradient(circle at 90% 10%, rgba(185,242,39,.4), transparent 34%), linear-gradient(145deg, var(--forest-900), var(--forest-700)); box-shadow: var(--shadow); }
+    .hero .tag { display: inline-block; border-radius: 999px; background: rgba(255,255,255,.13); padding: 5px 9px; font-size: 10px; font-weight: 900; letter-spacing: .7px; }
+    .hero h3 { font-size: 25px; margin: 10px 0 7px; }
+    .hero p { margin: 0; color: rgba(255,255,255,.78); font-size: 13px; line-height: 1.45; }
+    .hero-actions { margin-top: 16px; display: flex; gap: 9px; }
+    .button { border: 0; border-radius: 14px; padding: 12px 15px; font-weight: 900; background: var(--forest-900); color: white; box-shadow: 0 5px 12px rgba(8,42,31,.16); }
+    .button.lime { background: var(--lime); color: var(--forest-950); }
+    .button.ghost { background: #edf1ee; color: var(--forest-900); box-shadow: none; }
+    .button.wide { width: 100%; }
+    .button:disabled { opacity: .48; cursor: not-allowed; }
+
+    .section-title { margin: 20px 2px 10px; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); }
+    .card-list { display: grid; gap: 10px; }
+    .card { background: white; border: 1px solid #e0e7e2; border-radius: 17px; padding: 13px; box-shadow: 0 5px 16px rgba(20,50,39,.06); }
+    .row { display: flex; gap: 11px; align-items: center; }
+    .grow { flex: 1; min-width: 0; }
+    .badge-icon { width: 48px; height: 48px; flex: 0 0 auto; display: grid; place-items: center; font-size: 25px; border-radius: 15px; background: #edf4ef; }
+    .card h4 { margin: 0 0 3px; font-size: 14px; }
+    .card p { margin: 0; font-size: 11px; color: var(--muted); line-height: 1.35; }
+    .reward { font-size: 12px; font-weight: 900; color: var(--forest-700); white-space: nowrap; }
+    .task-done { opacity: .58; }
+
+    .species-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; }
+    .species-card { text-align: center; background: white; border: 1px solid #e0e7e2; border-radius: 18px; padding: 14px 10px; min-height: 149px; display: grid; place-items: center; align-content: center; box-shadow: 0 5px 16px rgba(20,50,39,.06); }
+    .species-card .emoji { font-size: 40px; }
+    .species-card h4 { margin: 7px 0 2px; font-size: 13px; }
+    .species-card small { color: var(--muted); font-size: 10px; }
+    .rarity { display: inline-block; margin-top: 7px; padding: 4px 8px; border-radius: 999px; font-size: 9px; font-weight: 950; letter-spacing: .6px; }
+    .common { background: #e5eee8; color: #3e5a4b; }
+    .uncommon { background: #dff2d2; color: #3c7220; }
+    .rare { background: #d7ebff; color: #1e62a6; }
+    .epic { background: #eee0ff; color: #703bb1; }
+    .legendary { background: #fff0bd; color: #8d6200; }
+
+    .scanner { min-height: 100%; background: radial-gradient(circle at center, #195b42 0%, #0b241b 72%); color: white; padding: max(18px, env(safe-area-inset-top)) 16px 30px; text-align: center; display: grid; grid-template-rows: auto 1fr auto; }
+    .scanner-head { display: flex; justify-content: space-between; align-items: center; }
+    .scanner-head h2 { margin: 0; font-size: 18px; }
+    .scanner-close { color: white; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.16); }
+    .scanner-stage { align-self: center; }
+    .camera-frame { position: relative; max-width: 430px; aspect-ratio: 4/5; max-height: 56vh; margin: 16px auto; border-radius: 28px; overflow: hidden; border: 2px solid rgba(255,255,255,.5); background: radial-gradient(circle at 50% 40%, rgba(185,242,39,.15), transparent 30%), linear-gradient(145deg, #2a7758, #102e23); box-shadow: 0 24px 60px rgba(0,0,0,.32); }
+    .camera-scene { position: absolute; inset: 0; display: grid; place-items: center; font-size: clamp(75px, 24vw, 130px); filter: drop-shadow(0 10px 10px rgba(0,0,0,.25)); }
+    .corner { position: absolute; width: 52px; height: 52px; border-color: var(--lime); border-style: solid; }
+    .corner.tl { top: 20px; left: 20px; border-width: 4px 0 0 4px; border-radius: 12px 0 0 0; }
+    .corner.tr { top: 20px; right: 20px; border-width: 4px 4px 0 0; border-radius: 0 12px 0 0; }
+    .corner.bl { bottom: 20px; left: 20px; border-width: 0 0 4px 4px; border-radius: 0 0 0 12px; }
+    .corner.br { bottom: 20px; right: 20px; border-width: 0 4px 4px 0; border-radius: 0 0 12px 0; }
+    .scan-line { position: absolute; left: 9%; right: 9%; height: 3px; top: 14%; background: var(--lime); box-shadow: 0 0 14px var(--lime); opacity: 0; }
+    .scanning .scan-line { opacity: 1; animation: scan 1.15s ease-in-out infinite alternate; }
+    @keyframes scan { to { top: 84%; } }
+    .scan-status { min-height: 46px; font-size: 13px; color: rgba(255,255,255,.72); }
+    .scan-button { width: 76px; height: 76px; margin: 0 auto; border: 7px solid rgba(255,255,255,.25); border-radius: 50%; background: var(--lime); box-shadow: inset 0 0 0 5px var(--forest-950), 0 10px 30px rgba(0,0,0,.3); font-size: 25px; }
+    .demo-label { margin: 12px 0 0; font-size: 10px; color: rgba(255,255,255,.52); }
+
+    .result-overlay { position: fixed; z-index: 2200; inset: 0; display: none; place-items: end center; background: rgba(5,25,18,.66); backdrop-filter: blur(4px); padding: 14px; }
+    .result-overlay.show { display: grid; }
+    .result-card { width: min(480px, 100%); background: white; border-radius: 28px; padding: 23px; text-align: center; box-shadow: 0 24px 70px rgba(0,0,0,.35); animation: rise .3s ease; }
+    @keyframes rise { from { transform: translateY(25px); opacity: 0; } }
+    .result-emoji { font-size: 74px; }
+    .result-card h2 { margin: 4px 0; }
+    .result-card p { color: var(--muted); font-size: 12px; line-height: 1.45; }
+    .xp-award { margin: 13px 0; font-size: 28px; color: var(--forest-700); font-weight: 950; }
+
+    .toast-area { position: fixed; z-index: 3000; top: calc(84px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); width: min(430px, calc(100% - 24px)); pointer-events: none; display: grid; gap: 8px; }
+    .toast { color: white; background: rgba(11,36,27,.95); border: 1px solid rgba(255,255,255,.12); border-radius: 14px; padding: 11px 13px; box-shadow: var(--shadow); font-size: 12px; animation: toastin .24s ease; }
+    @keyframes toastin { from { opacity: 0; transform: translateY(-9px); } }
+
+    .checkpoint-icon { width: 35px !important; height: 35px !important; margin-left: -17px !important; margin-top: -17px !important; display: grid !important; place-items: center; border-radius: 50%; border: 3px solid white; background: var(--forest-800); color: white; box-shadow: 0 4px 12px rgba(0,0,0,.28); font-weight: 950; }
+    .checkpoint-icon.locked { filter: grayscale(1); background: #68746e; }
+    .checkpoint-icon.done { background: var(--lime); color: var(--forest-950); }
+    .player-icon { width: 28px !important; height: 28px !important; margin-left: -14px !important; margin-top: -14px !important; border-radius: 50%; background: #3283f5; border: 4px solid white; box-shadow: 0 0 0 10px rgba(50,131,245,.18), 0 4px 10px rgba(0,0,0,.3); }
+    .leaflet-control-attribution { font-size: 8px; }
+    .leaflet-popup-content-wrapper { border-radius: 16px; }
+    .popup-title { font-weight: 900; color: var(--forest-900); margin-bottom: 4px; }
+    .popup-copy { font-size: 12px; color: var(--muted); margin-bottom: 9px; }
+    .popup-button { border: 0; border-radius: 10px; padding: 8px 10px; background: var(--forest-900); color: white; font-weight: 850; }
+
+    .sync-box { background: #edf3ee; border: 1px solid #d7e3da; border-radius: 15px; padding: 12px; font-size: 11px; color: var(--muted); word-break: break-word; }
+    .event-log { max-height: 235px; overflow: auto; display: grid; gap: 7px; margin-top: 10px; }
+    .event-item { background: white; border-radius: 11px; padding: 9px; border: 1px solid #e0e7e2; font-size: 10px; }
+
+    @media (min-width: 800px) {
+      #app { max-width: 520px; margin: 0 auto; box-shadow: 0 0 55px rgba(0,0,0,.35); }
+      body { background: linear-gradient(135deg, #071a13, #1d5a42); }
+      .result-overlay { place-items: center; }
     }
   </style>
 </head>
-
 <body>
+  <div id="app">
+    <header class="topbar">
+      <div class="top-row">
+        <div class="brand">
+          <div class="brand-logo">🌲</div>
+          <div><strong>UT!</strong><small>Skogens mysterium</small></div>
+        </div>
+        <div class="level-pill">NIVÅ <span id="levelValue">1</span> · ⭐ <b id="totalXp">0</b></div>
+      </div>
+      <div class="xp-wrap">
+        <span id="xpLevelStart">0</span>
+        <div class="xp-bar"><div class="xp-fill" id="xpFill"></div></div>
+        <span id="xpNext">1000 XP</span>
+      </div>
+    </header>
 
-  <div id="map"></div>
+    <main>
+      <div id="map" aria-label="Interaktivt eventyrkart"></div>
 
-  <!-- Leaflet JavaScript -->
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+      <div class="hud">
+        <section class="mission-card">
+          <div class="eyebrow" id="missionState">Klar for eventyr</div>
+          <h2>Skogens mysterium</h2>
+          <p id="missionHint">Start eventyret og følg ruten gjennom fem checkpoints.</p>
+          <div class="mission-progress">
+            <span id="checkpointText">0/5</span>
+            <div class="mini-bar"><div id="missionFill"></div></div>
+          </div>
+        </section>
+        <div class="map-actions">
+          <button class="round-button primary" id="locateBtn" aria-label="Finn min posisjon">◎</button>
+          <button class="round-button" id="resetViewBtn" aria-label="Vis hele ruten">🗺️</button>
+        </div>
+      </div>
+
+      <div class="stats-strip">
+        <div class="stat"><strong id="distanceValue">0.0 km</strong><span>Distanse</span></div>
+        <div class="stat"><strong id="checkpointValue">0/5</strong><span>Checkpoint</span></div>
+        <div class="stat"><strong id="speciesValue">0</strong><span>Arter</span></div>
+      </div>
+    </main>
+
+    <nav class="bottom-nav">
+      <button class="nav-btn active" data-view="map"><span class="icon">🗺️</span><span>Kart</span></button>
+      <button class="nav-btn" data-view="missions"><span class="icon">🎯</span><span>Oppdrag</span></button>
+      <button class="nav-btn scan" data-view="scanner"><span class="icon">📷</span><span>Scan</span></button>
+      <button class="nav-btn" data-view="collection"><span class="icon">🎒</span><span>Samling</span></button>
+    </nav>
+
+    <section class="panel" id="missionsPanel">
+      <div class="panel-head"><h2>Oppdrag</h2><button class="close-btn" data-close>×</button></div>
+      <div class="content">
+        <div class="hero">
+          <span class="tag">HOVEDOPPDRAG</span>
+          <h3>Skogens mysterium</h3>
+          <p>Følg ruten, besøk fem checkpoints og registrer minst tre arter for å fullføre eventyret.</p>
+          <div class="hero-actions"><button class="button lime" id="startMissionBtn">Start eventyr</button><button class="button" id="simulateWalkBtn">Demo-gåtur</button></div>
+        </div>
+        <h3 class="section-title">Dagens utfordringer</h3>
+        <div class="card-list" id="taskList"></div>
+        <h3 class="section-title">Prototype og Adalo</h3>
+        <div class="sync-box">
+          Hendelser lagres lokalt og publiseres som <code>window.postMessage</code>. Hvis URL-en åpnes med <code>?eventEndpoint=https://...</code>, forsøker prototypen også å sende JSON med POST. Ikke legg en hemmelig Adalo API-nøkkel i denne offentlige filen.
+        </div>
+        <div class="event-log" id="eventLog"></div>
+      </div>
+    </section>
+
+    <section class="panel" id="collectionPanel">
+      <div class="panel-head"><h2>Min natursamling</h2><button class="close-btn" data-close>×</button></div>
+      <div class="content">
+        <div class="hero">
+          <span class="tag">NATURDEX</span>
+          <h3><span id="collectionCount">0</span> arter oppdaget</h3>
+          <p>Samle vanlige, uvanlige, sjeldne og legendariske arter. Førstegangsoppdagelser gir bonuspoeng.</p>
+        </div>
+        <h3 class="section-title">Oppdagede arter</h3>
+        <div class="species-grid" id="speciesGrid"></div>
+      </div>
+    </section>
+
+    <section class="modal" id="scannerPanel">
+      <div class="scanner">
+        <div class="scanner-head"><h2>🌿 Artsscanner</h2><button class="close-btn scanner-close" data-close>×</button></div>
+        <div class="scanner-stage">
+          <div class="camera-frame" id="cameraFrame">
+            <div class="camera-scene" id="cameraScene">🌿</div>
+            <div class="corner tl"></div><div class="corner tr"></div><div class="corner bl"></div><div class="corner br"></div>
+            <div class="scan-line"></div>
+          </div>
+          <div class="scan-status" id="scanStatus">Rett kameraet mot en plante, fugl, sopp eller et insekt.</div>
+        </div>
+        <div><button class="scan-button" id="scanBtn" aria-label="Start demonstrasjonsskann">📷</button><p class="demo-label">DEMO-SCANNER · Resultatet simuleres og er ikke en ekte artsidentifikasjon</p></div>
+      </div>
+    </section>
+  </div>
+
+  <div class="result-overlay" id="resultOverlay">
+    <div class="result-card">
+      <div class="result-emoji" id="resultEmoji">🌿</div>
+      <span class="rarity common" id="resultRarity">VANLIG</span>
+      <h2 id="resultName">Bjørk</h2>
+      <p id="resultDescription"></p>
+      <div class="xp-award" id="resultXp">+50 XP</div>
+      <button class="button lime wide" id="collectBtn">Legg i samlingen</button>
+    </div>
+  </div>
+
+  <div class="toast-area" id="toastArea"></div>
+
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
 
   <script>
+    "use strict";
 
-    // Opprett kartet
-    const map = L.map("map").setView(
-      [63.4305, 10.3951],
-      13
-    );
+    // ============================================================
+    // 1. KONFIGURASJON
+    // ============================================================
+    const CONFIG = {
+      missionId: "skogens-mysterium-01",
+      missionName: "Skogens mysterium",
+      proximityMeters: 45,
+      xpPerLevel: 1000,
+      center: [63.4136, 10.4717],
+      // Dette kan gis i URL: ?userId=123&eventEndpoint=https://din-tjeneste.no/events
+      userId: new URLSearchParams(location.search).get("userId") || "demo-user",
+      eventEndpoint: new URLSearchParams(location.search).get("eventEndpoint") || ""
+    };
 
-    // OpenStreetMap
-    L.tileLayer(
-      "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-      {
-        maxZoom: 19,
-        attribution: '&copy; OpenStreetMap contributors'
+    const routeCoordinates = [
+      [63.41362, 10.47167],
+      [63.41425, 10.47335],
+      [63.41508, 10.47516],
+      [63.41584, 10.47712],
+      [63.41655, 10.47912],
+      [63.41735, 10.48058],
+      [63.41806, 10.47920],
+      [63.41855, 10.47670],
+      [63.41810, 10.47414]
+    ];
+
+    const checkpointData = [
+      { id: 1, position: routeCoordinates[0], title: "Startportalen", task: "Start eventyret og finn første spor.", xp: 100 },
+      { id: 2, position: routeCoordinates[2], title: "Tresorten", task: "Finn et tre og åpne artsscanneren.", xp: 120 },
+      { id: 3, position: routeCoordinates[4], title: "Bekken", task: "Se etter tegn på liv nær vannet.", xp: 140 },
+      { id: 4, position: routeCoordinates[6], title: "Utsiktspunktet", task: "Ta en kort pause og registrer omgivelsene.", xp: 160 },
+      { id: 5, position: routeCoordinates[8], title: "Mål: Skogvokteren", task: "Fullfør ruten etter minst tre artsfunn.", xp: 250 }
+    ];
+
+    const speciesCatalog = [
+      { name: "Bjørk", emoji: "🌳", rarity: "common", label: "Vanlig", xp: 50, weight: 20, description: "Et svært vanlig løvtre i Norge." },
+      { name: "Gran", emoji: "🌲", rarity: "common", label: "Vanlig", xp: 50, weight: 20, description: "Et eviggrønt bartre med korte nåler." },
+      { name: "Blåbær", emoji: "🫐", rarity: "common", label: "Vanlig", xp: 50, weight: 16, description: "En vanlig skogsplante med blå bær." },
+      { name: "Hvitveis", emoji: "🌼", rarity: "common", label: "Vanlig", xp: 50, weight: 14, description: "En kjent vårblomst i skog og mark." },
+      { name: "Rogn", emoji: "🌿", rarity: "uncommon", label: "Uvanlig", xp: 100, weight: 10, description: "Et tre med finnete blader og røde bær." },
+      { name: "Rødrev", emoji: "🦊", rarity: "uncommon", label: "Uvanlig", xp: 100, weight: 7, description: "Et tilpasningsdyktig rovdyr som ofte er sky." },
+      { name: "Flaggspett", emoji: "🐦", rarity: "rare", label: "Sjelden", xp: 250, weight: 5, description: "En hakkespett med tydelig svart, hvit og rød fjærdrakt." },
+      { name: "Blåklokke", emoji: "🔔", rarity: "rare", label: "Sjelden", xp: 250, weight: 4, description: "En vakker blåfiolett klokkeformet blomst." },
+      { name: "Stor salamander", emoji: "🦎", rarity: "epic", label: "Svært sjelden", xp: 500, weight: 2, description: "En sjelden amfibie knyttet til gode dammiljøer." },
+      { name: "Kongeørn", emoji: "🦅", rarity: "legendary", label: "Legendarisk", xp: 800, weight: 1, description: "En stor rovfugl og et svært heldig prototypefunn." }
+    ];
+
+    const defaultState = {
+      xp: 0,
+      missionStarted: false,
+      missionCompleted: false,
+      checkpoints: [],
+      species: {},
+      distanceKm: 0,
+      events: [],
+      demoPositionIndex: 0,
+      dailyRewards: []
+    };
+
+    let state = loadState();
+    let map, playerMarker, accuracyCircle, routeLine, routeShadow, adventureZone;
+    let checkpointMarkers = [];
+    let watchId = null;
+    let previousPosition = null;
+    let currentScan = null;
+    let scanning = false;
+    let demoTimer = null;
+
+    // ============================================================
+    // 2. HJELPEFUNKSJONER OG LAGRING
+    // ============================================================
+    function loadState() {
+      try {
+        const saved = JSON.parse(localStorage.getItem("utPrototypeState") || "null");
+        return { ...defaultState, ...(saved || {}) };
+      } catch (_) {
+        return { ...defaultState };
       }
-    ).addTo(map);
+    }
 
+    function saveState() {
+      localStorage.setItem("utPrototypeState", JSON.stringify(state));
+    }
 
-    // MARKØR
-    const marker = L.marker([
-      63.4305,
-      10.3951
-    ]).addTo(map);
+    function haversineMeters(a, b) {
+      const R = 6371000;
+      const toRad = d => d * Math.PI / 180;
+      const dLat = toRad(b[0] - a[0]);
+      const dLon = toRad(b[1] - a[1]);
+      const lat1 = toRad(a[0]);
+      const lat2 = toRad(b[0]);
+      const h = Math.sin(dLat/2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon/2) ** 2;
+      return 2 * R * Math.asin(Math.sqrt(h));
+    }
 
-    marker.bindPopup(
-      "<b>Eksempelpunkt</b><br>Trykkbare punkter fungerer!"
-    );
+    function addXp(amount, reason) {
+      state.xp += amount;
+      toast(`⭐ +${amount} XP · ${reason}`);
+      publishEvent("xp_earned", { amount, reason, totalXp: state.xp });
+      saveState();
+      renderAll();
+    }
 
+    function publishEvent(type, payload = {}) {
+      const event = {
+        eventId: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        type,
+        missionId: CONFIG.missionId,
+        userId: CONFIG.userId,
+        timestamp: new Date().toISOString(),
+        payload
+      };
 
-    // SONE
-    const sone1 = L.polygon([
-      [63.4320, 10.3880],
-      [63.4340, 10.3940],
-      [63.4315, 10.4010],
-      [63.4285, 10.3970],
-      [63.4290, 10.3900]
-    ], {
-      color: "#2563eb",
-      fillColor: "#3b82f6",
-      fillOpacity: 0.35
-    }).addTo(map);
+      state.events.unshift(event);
+      state.events = state.events.slice(0, 30);
+      saveState();
 
-    sone1.bindPopup(
-      "<b>Sone 1</b><br>Dette er vår første sone."
-    );
+      // Et event som en eventuell overordnet webside kan lytte etter.
+      window.parent.postMessage({ source: "UT_LEAFLET_PROTOTYPE", ...event }, "*");
+      window.dispatchEvent(new CustomEvent("ut-prototype-event", { detail: event }));
 
+      // Valgfri webhook. Bruk et sikkert mellomledd, ikke en hemmelig nøkkel i HTML-filen.
+      if (CONFIG.eventEndpoint) {
+        fetch(CONFIG.eventEndpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(event),
+          mode: "cors"
+        }).catch(error => console.warn("Kunne ikke sende event:", error));
+      }
+      renderEventLog();
+      return event;
+    }
 
-    // RUTE
-    const rute1 = L.polyline([
-      [63.4275, 10.3870],
-      [63.4290, 10.3900],
-      [63.4310, 10.3940],
-      [63.4330, 10.3990],
-      [63.4350, 10.4020]
-    ], {
-      color: "#dc2626",
-      weight: 5
-    }).addTo(map);
+    function toast(message) {
+      const node = document.createElement("div");
+      node.className = "toast";
+      node.textContent = message;
+      document.getElementById("toastArea").appendChild(node);
+      setTimeout(() => node.remove(), 3200);
+    }
 
-    rute1.bindPopup(
-      "<b>Rute 1</b><br>Dette er en eksempelrute."
-    );
+    function weightedRandom(items) {
+      const total = items.reduce((sum, item) => sum + item.weight, 0);
+      let target = Math.random() * total;
+      for (const item of items) {
+        target -= item.weight;
+        if (target <= 0) return item;
+      }
+      return items[0];
+    }
 
+    // ============================================================
+    // 3. KART
+    // ============================================================
+    function initMap() {
+      map = L.map("map", { zoomControl: false, attributionControl: true }).setView(CONFIG.center, 15);
+
+      L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: "&copy; OpenStreetMap-bidragsytere"
+      }).addTo(map);
+
+      L.control.zoom({ position: "bottomright" }).addTo(map);
+
+      const zoneCoordinates = [
+        [63.41255, 10.46945], [63.41400, 10.46795], [63.41640, 10.46925],
+        [63.41962, 10.47330], [63.41950, 10.48045], [63.41715, 10.48348],
+        [63.41435, 10.48165], [63.41225, 10.47640]
+      ];
+
+      adventureZone = L.polygon(zoneCoordinates, {
+        color: "#237451", weight: 2, fillColor: "#43a96f", fillOpacity: .10, dashArray: "7 8"
+      }).addTo(map).bindPopup("<div class='popup-title'>Eventyrsone</div><div class='popup-copy'>Oppdrag og artsfunn i dette området teller i prototypen.</div>");
+
+      routeShadow = L.polyline(routeCoordinates, { color: "white", weight: 10, opacity: .88 }).addTo(map);
+      routeLine = L.polyline(routeCoordinates, { color: "#18533c", weight: 6, opacity: .96, dashArray: "12 8" }).addTo(map);
+
+      renderCheckpointMarkers();
+      setPlayerPosition(routeCoordinates[state.demoPositionIndex] || routeCoordinates[0], 8, false);
+      fitRoute();
+    }
+
+    function renderCheckpointMarkers() {
+      checkpointMarkers.forEach(marker => map.removeLayer(marker));
+      checkpointMarkers = checkpointData.map((cp, index) => {
+        const isDone = state.checkpoints.includes(cp.id);
+        const isUnlocked = index === 0 || state.checkpoints.includes(checkpointData[index - 1].id);
+        const iconClass = isDone ? "done" : (isUnlocked ? "" : "locked");
+        const symbol = isDone ? "✓" : (isUnlocked ? cp.id : "🔒");
+        const icon = L.divIcon({ className: `checkpoint-icon ${iconClass}`, html: symbol, iconSize: [35,35] });
+        const marker = L.marker(cp.position, { icon, zIndexOffset: 500 }).addTo(map);
+        marker.on("click", () => openCheckpoint(cp, index));
+        return marker;
+      });
+    }
+
+    function openCheckpoint(cp, index) {
+      const done = state.checkpoints.includes(cp.id);
+      const unlocked = index === 0 || state.checkpoints.includes(checkpointData[index - 1].id);
+      if (!unlocked) {
+        markerPopup(cp.position, cp.title, "Fullfør forrige checkpoint først.", "Låst");
+        return;
+      }
+      if (done) {
+        markerPopup(cp.position, cp.title, "Dette checkpointet er allerede fullført.", "Fullført ✓");
+        return;
+      }
+      const buttonLabel = state.missionStarted ? `Fullfør (+${cp.xp} XP)` : "Start oppdraget først";
+      markerPopup(cp.position, cp.title, cp.task, buttonLabel, state.missionStarted ? `completeCheckpoint(${cp.id})` : "startMission()");
+    }
+
+    function markerPopup(position, title, copy, buttonText, action = "") {
+      const safeTitle = String(title).replace(/[<>]/g, "");
+      const safeCopy = String(copy).replace(/[<>]/g, "");
+      const html = `<div class="popup-title">${safeTitle}</div><div class="popup-copy">${safeCopy}</div><button class="popup-button" onclick="${action}">${buttonText}</button>`;
+      L.popup({ closeButton: true }).setLatLng(position).setContent(html).openOn(map);
+    }
+
+    function setPlayerPosition(position, accuracy = 10, countDistance = true) {
+      if (!playerMarker) {
+        playerMarker = L.marker(position, { icon: L.divIcon({ className: "player-icon", iconSize: [28,28] }), zIndexOffset: 1000 }).addTo(map);
+        accuracyCircle = L.circle(position, { radius: accuracy, color: "#3283f5", fillColor: "#3283f5", fillOpacity: .08, weight: 1 }).addTo(map);
+      } else {
+        playerMarker.setLatLng(position);
+        accuracyCircle.setLatLng(position).setRadius(accuracy);
+      }
+
+      if (countDistance && previousPosition) {
+        const meters = haversineMeters(previousPosition, position);
+        if (meters > 2 && meters < 200) state.distanceKm += meters / 1000;
+      }
+      previousPosition = position;
+      checkProximity(position);
+      saveState();
+      renderAll();
+    }
+
+    function checkProximity(position) {
+      if (!state.missionStarted || state.missionCompleted) return;
+      const next = checkpointData.find(cp => !state.checkpoints.includes(cp.id));
+      if (next && haversineMeters(position, next.position) <= CONFIG.proximityMeters) {
+        toast(`📍 Du er nær ${next.title}. Trykk på checkpointet!`);
+      }
+    }
+
+    function fitRoute() { map.fitBounds(L.latLngBounds(routeCoordinates), { padding: [55,55] }); }
+
+    function locateUser() {
+      if (!navigator.geolocation) {
+        toast("GPS støttes ikke her. Bruk Demo-gåtur.");
+        return;
+      }
+      toast("Finner posisjonen din …");
+      navigator.geolocation.getCurrentPosition(
+        pos => {
+          const p = [pos.coords.latitude, pos.coords.longitude];
+          setPlayerPosition(p, pos.coords.accuracy, true);
+          map.setView(p, 17);
+          publishEvent("location_updated", { latitude: p[0], longitude: p[1], accuracy: pos.coords.accuracy });
+        },
+        () => toast("Fikk ikke tilgang til posisjon. Bruk Demo-gåtur."),
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
+      );
+    }
+
+    // ============================================================
+    // 4. OPPDRAG, DEMO-GÅTUR OG CHECKPOINTS
+    // ============================================================
+    function startMission() {
+      if (!state.missionStarted) {
+        state.missionStarted = true;
+        publishEvent("adventure_started", { name: CONFIG.missionName });
+        toast("🥾 Eventyret har startet!");
+      } else {
+        toast("Eventyret er allerede i gang.");
+      }
+      saveState();
+      closePanels();
+      renderAll();
+      openCheckpoint(checkpointData.find(cp => !state.checkpoints.includes(cp.id)) || checkpointData[4], Math.min(state.checkpoints.length, 4));
+    }
+
+    function completeCheckpoint(id) {
+      const cp = checkpointData.find(item => item.id === id);
+      const index = checkpointData.findIndex(item => item.id === id);
+      if (!cp || state.checkpoints.includes(id)) return;
+      const previousDone = index === 0 || state.checkpoints.includes(checkpointData[index - 1].id);
+      if (!state.missionStarted || !previousDone) return;
+
+      if (id === 5 && Object.keys(state.species).length < 3) {
+        map.closePopup();
+        toast("🌿 Du må oppdage minst tre arter før mål!");
+        openScanner();
+        return;
+      }
+
+      state.checkpoints.push(id);
+      publishEvent("checkpoint_reached", { checkpointId: id, title: cp.title, xp: cp.xp });
+      map.closePopup();
+      addXp(cp.xp, cp.title);
+      renderCheckpointMarkers();
+
+      if (state.checkpoints.length === checkpointData.length) completeMission();
+      else toast(`🔓 Checkpoint ${id + 1} er låst opp!`);
+    }
+
+    function completeMission() {
+      if (state.missionCompleted) return;
+      state.missionCompleted = true;
+      state.xp += 500;
+      publishEvent("route_completed", {
+        distanceKm: Number(state.distanceKm.toFixed(2)),
+        checkpoints: state.checkpoints.length,
+        uniqueSpecies: Object.keys(state.species).length,
+        bonusXp: 500
+      });
+      saveState();
+      renderAll();
+      toast("🏆 Eventyr fullført · +500 bonus-XP!");
+      setTimeout(() => alert(`🏆 EVENTYR FULLFØRT!\n\n${state.distanceKm.toFixed(1)} km\n${state.checkpoints.length}/5 checkpoints\n${Object.keys(state.species).length} arter\n\n+500 bonus-XP`), 350);
+    }
+
+    function demoWalk() {
+      if (!state.missionStarted) startMission();
+      closePanels();
+      if (demoTimer) {
+        clearInterval(demoTimer);
+        demoTimer = null;
+        toast("Demo-gåtur pauset.");
+        return;
+      }
+      toast("▶ Demo-gåtur startet. Checkpoints åpnes automatisk.");
+      demoTimer = setInterval(() => {
+        if (state.demoPositionIndex >= routeCoordinates.length - 1) {
+          clearInterval(demoTimer); demoTimer = null;
+          toast("Demo-gåtur nådde enden av ruten.");
+          return;
+        }
+        state.demoPositionIndex += 1;
+        const p = routeCoordinates[state.demoPositionIndex];
+        setPlayerPosition(p, 8, true);
+        map.panTo(p);
+        const cp = checkpointData.find(item => haversineMeters(p, item.position) < 30 && !state.checkpoints.includes(item.id));
+        if (cp) completeCheckpoint(cp.id);
+      }, 1250);
+    }
+
+    // ============================================================
+    // 5. FAKE ARTSSCANNER
+    // ============================================================
+    function openScanner() {
+      closePanels();
+      document.getElementById("scannerPanel").classList.add("open");
+      document.getElementById("cameraScene").textContent = ["🌿","🌲","🌼","🍄"][Math.floor(Math.random()*4)];
+      document.getElementById("scanStatus").textContent = "Rett kameraet mot en plante, fugl, sopp eller et insekt.";
+    }
+
+    function scanSpecies() {
+      if (scanning) return;
+      scanning = true;
+      const frame = document.getElementById("cameraFrame");
+      const status = document.getElementById("scanStatus");
+      frame.classList.add("scanning");
+      status.textContent = "Analyserer bilde … 0 %";
+      let value = 0;
+      const timer = setInterval(() => {
+        value += Math.floor(Math.random() * 18) + 9;
+        if (value >= 100) {
+          value = 100;
+          clearInterval(timer);
+          status.textContent = "Sammenligner kjennetegn …";
+          setTimeout(showScanResult, 650);
+        } else status.textContent = `Analyserer bilde … ${value} %`;
+      }, 180);
+    }
+
+    function showScanResult() {
+      document.getElementById("cameraFrame").classList.remove("scanning");
+      currentScan = weightedRandom(speciesCatalog);
+      const isNew = !state.species[currentScan.name];
+      const bonus = isNew ? 100 : 0;
+      document.getElementById("resultEmoji").textContent = currentScan.emoji;
+      document.getElementById("resultName").textContent = currentScan.name;
+      document.getElementById("resultDescription").textContent = `${currentScan.description} ${isNew ? "Ny art: +100 bonus-XP!" : "Arten finnes allerede i samlingen."}`;
+      const rarity = document.getElementById("resultRarity");
+      rarity.textContent = currentScan.label.toUpperCase();
+      rarity.className = `rarity ${currentScan.rarity}`;
+      document.getElementById("resultXp").textContent = `+${currentScan.xp + bonus} XP`;
+      document.getElementById("resultOverlay").classList.add("show");
+      scanning = false;
+    }
+
+    function collectSpecies() {
+      if (!currentScan) return;
+      const previous = state.species[currentScan.name];
+      const isNew = !previous;
+      const bonus = isNew ? 100 : 0;
+      state.species[currentScan.name] = {
+        ...currentScan,
+        count: (previous?.count || 0) + 1,
+        discoveredAt: previous?.discoveredAt || new Date().toISOString()
+      };
+      state.xp += currentScan.xp + bonus;
+      publishEvent("species_scanned", {
+        species: currentScan.name,
+        rarity: currentScan.rarity,
+        baseXp: currentScan.xp,
+        discoveryBonus: bonus,
+        totalAwardedXp: currentScan.xp + bonus,
+        isNew
+      });
+      saveState();
+      document.getElementById("resultOverlay").classList.remove("show");
+      document.getElementById("scannerPanel").classList.remove("open");
+      toast(`${currentScan.emoji} ${currentScan.name} lagt til · +${currentScan.xp + bonus} XP`);
+      currentScan = null;
+      renderAll();
+    }
+
+    // ============================================================
+    // 6. GRENSESNITT
+    // ============================================================
+    function renderAll() {
+      const level = Math.floor(state.xp / CONFIG.xpPerLevel) + 1;
+      const withinLevel = state.xp % CONFIG.xpPerLevel;
+      document.getElementById("levelValue").textContent = level;
+      document.getElementById("totalXp").textContent = state.xp.toLocaleString("no-NO");
+      document.getElementById("xpLevelStart").textContent = `${withinLevel} XP`;
+      document.getElementById("xpNext").textContent = `${CONFIG.xpPerLevel} XP`;
+      document.getElementById("xpFill").style.width = `${withinLevel / CONFIG.xpPerLevel * 100}%`;
+
+      const cpCount = state.checkpoints.length;
+      document.getElementById("checkpointText").textContent = `${cpCount}/5`;
+      document.getElementById("checkpointValue").textContent = `${cpCount}/5`;
+      document.getElementById("missionFill").style.width = `${cpCount / 5 * 100}%`;
+      document.getElementById("distanceValue").textContent = `${state.distanceKm.toFixed(1)} km`;
+      document.getElementById("speciesValue").textContent = Object.keys(state.species).length;
+      document.getElementById("collectionCount").textContent = Object.keys(state.species).length;
+
+      const missionState = document.getElementById("missionState");
+      const missionHint = document.getElementById("missionHint");
+      if (state.missionCompleted) {
+        missionState.textContent = "Eventyr fullført";
+        missionHint.textContent = "Flott jobbet! Resultatet er lagret i prototypen.";
+      } else if (state.missionStarted) {
+        missionState.textContent = "Eventyr pågår";
+        missionHint.textContent = `Neste mål: ${checkpointData.find(cp => !state.checkpoints.includes(cp.id))?.title || "Mål"}.`;
+      } else {
+        missionState.textContent = "Klar for eventyr";
+        missionHint.textContent = "Start eventyret og følg ruten gjennom fem checkpoints.";
+      }
+      document.getElementById("startMissionBtn").textContent = state.missionStarted ? "Fortsett eventyr" : "Start eventyr";
+      renderTasks();
+      renderCollection();
+      renderEventLog();
+    }
+
+    function renderTasks() {
+      const tasks = [
+        { icon: "🥾", title: "Start et eventyr", text: "Begynn Skogens mysterium", reward: 100, done: state.missionStarted },
+        { icon: "📍", title: "Besøk tre checkpoints", text: `${Math.min(state.checkpoints.length,3)}/3 fullført`, reward: 200, done: state.checkpoints.length >= 3 },
+        { icon: "🌿", title: "Finn tre arter", text: `${Math.min(Object.keys(state.species).length,3)}/3 registrert`, reward: 250, done: Object.keys(state.species).length >= 3 },
+        { icon: "🏆", title: "Fullfør hele ruten", text: "Nå alle fem checkpoints", reward: 500, done: state.missionCompleted }
+      ];
+      document.getElementById("taskList").innerHTML = tasks.map(task => `
+        <div class="card ${task.done ? "task-done" : ""}"><div class="row">
+          <div class="badge-icon">${task.done ? "✅" : task.icon}</div>
+          <div class="grow"><h4>${task.title}</h4><p>${task.text}</p></div>
+          <div class="reward">+${task.reward} XP</div>
+        </div></div>`).join("");
+    }
+
+    function renderCollection() {
+      const entries = Object.values(state.species);
+      const grid = document.getElementById("speciesGrid");
+      if (!entries.length) {
+        grid.innerHTML = `<div class="card" style="grid-column:1/-1;text-align:center;padding:25px"><div style="font-size:42px">🔍</div><h4>Ingen arter ennå</h4><p>Åpne demo-scanneren og gjør ditt første funn.</p></div>`;
+        return;
+      }
+      grid.innerHTML = entries.sort((a,b) => b.xp - a.xp).map(item => `
+        <div class="species-card">
+          <div class="emoji">${item.emoji}</div><h4>${item.name}</h4><small>Funnet ${item.count} gang${item.count === 1 ? "" : "er"}</small>
+          <span class="rarity ${item.rarity}">${item.label.toUpperCase()} · ${item.xp} XP</span>
+        </div>`).join("");
+    }
+
+    function renderEventLog() {
+      const log = document.getElementById("eventLog");
+      if (!log) return;
+      log.innerHTML = state.events.length ? state.events.slice(0, 10).map(e => `<div class="event-item"><strong>${e.type}</strong><br>${new Date(e.timestamp).toLocaleString("no-NO")} · ${JSON.stringify(e.payload)}</div>`).join("") : `<div class="event-item">Ingen hendelser er registrert ennå.</div>`;
+    }
+
+    function openPanel(id) {
+      closePanels();
+      document.getElementById(id).classList.add("open");
+    }
+
+    function closePanels() {
+      document.querySelectorAll(".panel.open,.modal.open").forEach(el => el.classList.remove("open"));
+      document.querySelectorAll(".nav-btn").forEach(btn => btn.classList.toggle("active", btn.dataset.view === "map"));
+    }
+
+    // Gjør popup-handlinger tilgjengelige for Leaflet HTML.
+    window.startMission = startMission;
+    window.completeCheckpoint = completeCheckpoint;
+
+    document.addEventListener("DOMContentLoaded", () => {
+      initMap();
+      renderAll();
+
+      document.getElementById("locateBtn").addEventListener("click", locateUser);
+      document.getElementById("resetViewBtn").addEventListener("click", fitRoute);
+      document.getElementById("startMissionBtn").addEventListener("click", startMission);
+      document.getElementById("simulateWalkBtn").addEventListener("click", demoWalk);
+      document.getElementById("scanBtn").addEventListener("click", scanSpecies);
+      document.getElementById("collectBtn").addEventListener("click", collectSpecies);
+      document.querySelectorAll("[data-close]").forEach(btn => btn.addEventListener("click", closePanels));
+      document.querySelectorAll(".nav-btn").forEach(btn => btn.addEventListener("click", () => {
+        document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        const view = btn.dataset.view;
+        if (view === "map") closePanels();
+        if (view === "missions") openPanel("missionsPanel");
+        if (view === "collection") openPanel("collectionPanel");
+        if (view === "scanner") openScanner();
+      }));
+
+      // Nyttig i demonstrasjonen: R sletter fremdrift når siden kjøres på PC.
+      window.addEventListener("keydown", event => {
+        if (event.key.toLowerCase() === "r" && event.shiftKey) {
+          if (confirm("Nullstille all prototypefremdrift?")) {
+            localStorage.removeItem("utPrototypeState");
+            location.reload();
+          }
+        }
+      });
+    });
   </script>
-
 </body>
 </html>
